@@ -18,20 +18,10 @@ logging.basicConfig(
 STORAGE_DIR = Path(__file__).parent / 'playwright-state'
 
 
-class CustomPage:
-    """A wrapper class for Playwright Page with custom utility methods for Strava automation.
-    
-    This class extends the functionality of a Playwright Page by adding Strava-specific
-    helper methods while maintaining access to all original Page methods through delegation.
-    """
-    
-    def __init__(self, page: Page) -> None:
-        """Initialize the CustomPage wrapper.
-        
-        Args:
-            page: A Playwright Page instance to wrap.
-        """
-        self._page = page
+class StravaPage:
+    def __init__(self, playwright_page: Page) -> None:
+        """Strava page constructor: fields don't have to be predefined in the class"""
+        self.playwright_page = playwright_page
     
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying Playwright Page instance.
@@ -45,15 +35,10 @@ class CustomPage:
         Returns:
             The attribute value from the underlying Page instance.
         """
-        return getattr(self._page, name)
+        return getattr(self.playwright_page, name)
     
-    async def is_on_dashboard_page(self) -> bool:
-        """Check if the current page is the Strava dashboard.
-        
-        Returns:
-            True if the current URL contains "dashboard", False otherwise.
-        """
-        if "dashboard" not in self._page.url:
+    async def is_on_dashboard_page__url_contains_dashboard(self) -> bool:
+        if "dashboard" not in self.playwright_page.url:
             return False
 
         return True
@@ -64,14 +49,14 @@ class CustomPage:
         Returns:
             True if the current URL contains "login", False otherwise.
         """
-        if "login" not in self._page.url:
+        if "login" not in self.playwright_page.url:
             return False
 
         return True
     
     async def refresh_page(self) -> None:
         """Refresh current page."""
-        await self._page.reload(wait_until="load")
+        await self.playwright_page.reload(wait_until="load")
 
     async def accept_cookies(self) -> None:
         """Automatically accept cookies if the cookie consent banner is present.
@@ -80,7 +65,7 @@ class CustomPage:
         the "Accept All" button if found. If no banner is present - log entry is created.
         """
         try:
-            cookie_banner_btns = await self._page.wait_for_selector("//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
+            cookie_banner_btns = await self.playwright_page.wait_for_selector("//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
             cookie_banner_accept_btn = await cookie_banner_btns.query_selector("//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
             
             if cookie_banner_accept_btn:
@@ -95,10 +80,10 @@ class CustomPage:
         and giving time for human to perform login manually.
         """
         if not await self.is_on_login_page():
-            await self._page.goto("https://www.strava.com/login", wait_until="load")
+            await self.playwright_page.goto("https://www.strava.com/login", wait_until="load")
             await asyncio.sleep(1)
 
-        login_buttons = await self._page.query_selector_all('//button[@data-testid="google_auth_btn"]')
+        login_buttons = await self.playwright_page.query_selector_all('//button[@data-testid="google_auth_btn"]')
         logger.debug(f"Found {len(login_buttons)} buttons:")
         
         for btn in login_buttons:
@@ -110,7 +95,7 @@ class CustomPage:
             
         await asyncio.sleep(2)
 
-        if not await self.is_on_dashboard_page():
+        if not await self.is_on_dashboard_page__url_contains_dashboard():
             logger.info("Do a manual login.")
             await asyncio.sleep(50)
         else:
@@ -144,10 +129,10 @@ class CustomPage:
     
     async def scroll_to_bottom_of_page(self) -> None:
         """Scrolls to the end of page and waits a bit for website to render"""
-        await self._page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        await self.playwright_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
         await asyncio.sleep(3)
 
-        await self._page.evaluate("window.scrollBy(0, -200)")
+        await self.playwright_page.evaluate("window.scrollBy(0, -200)")
         await asyncio.sleep(12)
         
     async def is_element_in_viewport(self, element: Locator) -> bool:
@@ -163,7 +148,7 @@ class CustomPage:
         if not box:
             return False
 
-        viewport = await self._page.evaluate(
+        viewport = await self.playwright_page.evaluate(
             "() => ({ width: window.innerWidth, height: window.innerHeight })"
         )
 
@@ -185,7 +170,7 @@ class CustomPage:
             Scrolling must be performed **after** calling this method 
             in order to reveal additional buttons outside the current view.
         """
-        feed_entries = self._page.locator("div[data-testid='web-feed-entry']")
+        feed_entries = self.playwright_page.locator("div[data-testid='web-feed-entry']")
         feed_entries_count = await feed_entries.count()
 
         logger.debug(f"Feed entries count {feed_entries_count}")
@@ -243,7 +228,7 @@ class CustomPage:
             new kudos buttons for `give_kudos()` to process.
         """
         for _ in range(num_of_scrolls):
-            await self._page.mouse.wheel(0, scroll_px)
+            await self.playwright_page.mouse.wheel(0, scroll_px)
             await asyncio.sleep(5000)
 
 
@@ -309,14 +294,9 @@ class BrowserManager:
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
     
-    async def new_page(self) -> CustomPage:
-        """Create a new browser page wrapped in CustomPage.
-        
-        Returns:
-            A CustomPage instance wrapping a new Playwright Page.
-        """
+    async def new_page(self) -> StravaPage:
         page = await self.context.new_page()
-        return CustomPage(page)
+        return StravaPage(page)
     
     async def close_browser(self) -> None:
         """Close the browser context and stop Playwright.
