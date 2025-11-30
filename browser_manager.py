@@ -38,29 +38,17 @@ class StravaPage:
         return getattr(self.playwright_page, name)
     
     async def is_on_dashboard_page__url_contains_dashboard(self) -> bool:
-        if "dashboard" not in self.playwright_page.url:
-            return False
-
-        return True
+        return "dashboard" in self.playwright_page.url
     
     async def is_on_login_page(self) -> bool:
-        """Check if the current page is the Strava login page.
-        
-        Returns:
-            True if the current URL contains "login", False otherwise.
-        """
-        if "login" not in self.playwright_page.url:
-            return False
-
-        return True
+        return "login" in self.playwright_page.url
     
     async def refresh_page(self) -> None:
-        """Refresh current page."""
         await self.playwright_page.reload(wait_until="load")
 
     async def accept_cookies(self) -> None:
         """Automatically accept cookies if the cookie consent banner is present.
-        
+
         This method waits few seconds for the cookie banner to appear, then clicks
         the "Accept All" button if found. If no banner is present - log entry is created.
         """
