@@ -23,11 +23,7 @@ async def main() -> None:
 
         await page.do_login()
 
-        await page.execute_kudos_giving(
-            number_of_scrolls_to_end=1,
-            interval=1200, #20min
-            athletes_to_skip=[name.strip() for name in "".split(",") if name.strip()]
-        )
+        await page.execute_kudos_routine()
     finally:
         await manager.close_browser()
 

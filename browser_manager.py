@@ -89,31 +89,19 @@ class StravaPage:
         else:
             logger.info("On dashboard page.")
 
-    async def execute_kudos_giving(self, number_of_scrolls_to_end: int = 5, interval: int = 60 * 60, athletes_to_skip: List[str] = []) -> None:
-        """Performs iterative scrolling, kudos giving and page refresh.
-        
-        Args:
-            number_of_scrolls_to_end: number of scrolls to perform. Single scroll meaning scrolling till the end of a page.
-            interval: interval in seconds between number of scrolls to end
-            athletes_to_skip: list of athletes to skip
-        """
+    async def execute_kudos_routine(self) -> None:
         try:
             while True: 
-                for i in range(number_of_scrolls_to_end):
-                    logger.info(f"Scrolling to the end {i + 1}/{number_of_scrolls_to_end} time.")
-                    logger.info(10 * "*")
+                for i in range(1):
+                    logger.info(f"Scrolling: iteration: {i}")
                     await self.scroll_to_bottom_of_page()
                 
-                await self.give_kudos(athletes_to_skip=athletes_to_skip)
-
-                logger.info(f"Sleeping for {interval} seconds.")
-                await asyncio.sleep(interval)
-
-                logger.info("Refreshing page.")
+                await self.give_kudos(athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()])
+                await asyncio.sleep(1200) #20min
                 self.refresh_page()
         except asyncio.CancelledError:
-            logger.info("execute_kudos_giving cancelled, cleaning up…")
-            raise
+            logger.info("kudos routine cancelled")
+            raise #passes the same exception up; raise is "throw" in java
     
     async def scroll_to_bottom_of_page(self) -> None:
         """Scrolls to the end of page and waits a bit for website to render"""
