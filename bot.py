@@ -23,7 +23,7 @@ async def main() -> None:
 
         await page.do_login()
 
-        await page.execute_kudos_routine()
+        await page.loop_kudos_routines_with_cooldown()
     finally:
         await manager.close_browser()
 

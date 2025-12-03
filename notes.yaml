@@ -1,0 +1,3 @@
+PROBLEM:
+  - scroll_to_bottom_of_page - can those waits be reduced/stopped by some trigger, like "page fully loaded state".
+  - number of scroll downs, should be a "cap" only. else, stop scrolling down by detecting a kudos button pressed

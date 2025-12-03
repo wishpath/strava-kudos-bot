@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Final
 import asyncio
 
 from playwright.async_api import async_playwright
@@ -89,26 +89,31 @@ class StravaPage:
         else:
             logger.info("On dashboard page.")
 
-    async def execute_kudos_routine(self) -> None:
+    async def loop_kudos_routines_with_cooldown(self) -> None:
+        twenty_minutes_in_seconds_between_kudos_routines: Final = 20 * 60
+
         try:
             while True: 
-                for i in range(1):
+                for i in range(3):
                     logger.info(f"Scrolling: iteration: {i}")
                     await self.scroll_to_bottom_of_page()
-                
-                await self.give_kudos(athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()])
-                await asyncio.sleep(1200) #20min
+                await self.click_all_visible_kudos_buttons()
+                await asyncio.sleep(twenty_minutes_in_seconds_between_kudos_routines)
                 self.refresh_page()
+
         except asyncio.CancelledError:
             logger.info("kudos routine cancelled")
-            raise #passes the same exception up; raise is "throw" in java
+            raise
     
     async def scroll_to_bottom_of_page(self) -> None:
-        """Scrolls to the end of page and waits a bit for website to render"""
+        # Jump directly to the bottom of the page
+        # This triggers lazy loading for new entries that appear when reaching the bottom
         await self.playwright_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
         await asyncio.sleep(3)
-
+        # Scroll slightly upward
+        # Some sites only trigger loading fully after a tiny upward movement
         await self.playwright_page.evaluate("window.scrollBy(0, -200)")
+        # Wait longer to ensure all new entries are loaded and rendered
         await asyncio.sleep(12)
         
     async def is_element_in_viewport(self, element: Locator) -> bool:
@@ -133,14 +138,12 @@ class StravaPage:
 
         return not (bottom < 0 or top > viewport["height"])
     
-    async def give_kudos(self, athletes_to_skip: List[str] = []) -> None:
+    async def click_all_visible_kudos_buttons(self) -> None:
+        athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()]
         """
         Click all visible kudos buttons that have not yet been clicked.
         This method: locates all kudos buttons currently in the viewport, filters out those already clicked, 
         licks each remaining kudos button.
-
-        Args:
-            athletes_to_skip: list of atheletes ('in' will be used to check) to skip kudos giving.
         
         Notes:
             Scrolling must be performed **after** calling this method 
