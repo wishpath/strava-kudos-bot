@@ -89,15 +89,18 @@ class StravaPage:
         else:
             logger.info("On dashboard page.")
 
-    async def loop_kudos_routines_with_cooldown(self) -> None:
+    async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
         twenty_minutes_in_seconds_between_kudos_routines: Final = 20 * 60
 
         try:
-            while True: 
-                for i in range(3):
-                    logger.info(f"Scrolling: iteration: {i}")
-                    await self.scroll_to_bottom_of_page()
-                await self.click_all_visible_kudos_buttons()
+            while True:
+                """kudos routine of lazy loading entries and clicking"""
+                for i in range(1):
+                    logger.info(f"Scrolling down to load feed entries: iteration: {i}")
+                    await self.scroll_to_bottom_of_page_to_load_entries()
+                await self.check_all_kudos_buttons_and_click()
+
+                """cooldown gap"""
                 await asyncio.sleep(twenty_minutes_in_seconds_between_kudos_routines)
                 self.refresh_page()
 
@@ -105,7 +108,7 @@ class StravaPage:
             logger.info("kudos routine cancelled")
             raise
     
-    async def scroll_to_bottom_of_page(self) -> None:
+    async def scroll_to_bottom_of_page_to_load_entries(self) -> None:
         # Jump directly to the bottom of the page
         # This triggers lazy loading for new entries that appear when reaching the bottom
         await self.playwright_page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
@@ -138,30 +141,20 @@ class StravaPage:
 
         return not (bottom < 0 or top > viewport["height"])
     
-    async def click_all_visible_kudos_buttons(self) -> None:
+    async def check_all_kudos_buttons_and_click(self) -> None:
         athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()]
-        """
-        Click all visible kudos buttons that have not yet been clicked.
-        This method: locates all kudos buttons currently in the viewport, filters out those already clicked, 
-        licks each remaining kudos button.
-        
-        Notes:
-            Scrolling must be performed **after** calling this method 
-            in order to reveal additional buttons outside the current view.
-        """
+
+        """Getting all feed entries"""
         feed_entries = self.playwright_page.locator("div[data-testid='web-feed-entry']")
         feed_entries_count = await feed_entries.count()
-
-        logger.debug(f"Feed entries count {feed_entries_count}")
+        logger.debug(f"Visible feed entries count {feed_entries_count}")
 
         for i in range(feed_entries_count):
             feed_entry = feed_entries.nth(i)
 
+            """Getting kudos buttons in the feed entry"""
             kudos_buttons = feed_entry.locator("//button[@data-testid='kudos_button']")
             kudos_buttons_count = await kudos_buttons.count()
-
-            logger.info(30 * "-")
-            logger.info(f"Kudos buttons count {kudos_buttons_count}")
 
             for j in range(kudos_buttons_count):
                 kudos_button = kudos_buttons.nth(j)
@@ -173,42 +166,26 @@ class StravaPage:
                     entry_li = kudos_button.locator("xpath=ancestor::li[.//*[@data-testid='entry-header']]")
                     owner_name = entry_li.locator("//a[@data-testid='owners-name']").first
                     owner_name = await owner_name.inner_text()
-                    
-                logger.info(f"Owner: {owner_name}")
 
-                unfilled_kudos_button = kudos_button.locator("svg[data-testid='unfilled_kudos']")
-                is_unfilled = await unfilled_kudos_button.count() > 0
+                kudos_button_to_click = kudos_button.locator("svg[data-testid='unfilled_kudos']")
+                is_to_be_clicked = await kudos_button_to_click.count() > 0
+                should_skip = athletes_to_skip and any(athlete.lower() in owner_name.lower() for athlete in athletes_to_skip)
+                if should_skip:
+                    clicking_status = "skipping this athlete"
+                elif is_to_be_clicked:
+                    clicking_status = "clicking now"
+                else:
+                    clicking_status = "was already clicked before"
 
-                if not is_unfilled:
-                    logger.info("-> Already clicked.")
+                if not is_to_be_clicked or should_skip:
+                    await feed_entry.scroll_into_view_if_needed()
+                    logger.info(f"Feed entry of: {owner_name}, kudos button: {clicking_status}")
                     continue
 
-                if athletes_to_skip and any(athlete.lower() in owner_name.lower() for athlete in athletes_to_skip):
-                    logger.info("-> Skipping.")
-                    continue
-
+                logger.info(f"Feed entry of: {owner_name}, kudos button: {clicking_status}")
                 await kudos_button.click()
-                logger.info("-> Clicked.")
             
             await asyncio.sleep(1)
-
-    async def do_scroll(self, num_of_scrolls: int = 1, scroll_px: int = 800) -> None:
-        """
-        Scroll the page a specified number of times.
-
-        Args:
-            num_of_scrolls (int, optional):
-                The number of scroll actions to perform. Defaults to 1.
-            scroll_px (int, optional):
-                Number of pixels to scroll down on each scroll action. Defaults to 800.
-
-        Notes:
-            Each scroll action should move the viewport enough to reveal
-            new kudos buttons for `give_kudos()` to process.
-        """
-        for _ in range(num_of_scrolls):
-            await self.playwright_page.mouse.wheel(0, scroll_px)
-            await asyncio.sleep(5000)
 
 
 class BrowserManager:
