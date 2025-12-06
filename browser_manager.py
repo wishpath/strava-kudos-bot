@@ -229,7 +229,7 @@ class BrowserManager:
             user_data_dir=str(STORAGE_DIR),
             headless=False,
             channel="chrome",
-            viewport={"width": 1440, "height": 900},
+            #viewport={"width": 1440, "height": 900},
             locale="en-US",
             timezone_id="Europe/Vilnius",
             service_workers="allow",
@@ -240,7 +240,8 @@ class BrowserManager:
                 "--disable-dev-shm-usage",
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--mute-audio"
+                "--mute-audio",
+                "--start-maximized"
             ],
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
@@ -250,12 +251,6 @@ class BrowserManager:
         return StravaPage(page)
     
     async def close_browser(self) -> None:
-        """Close the browser context and stop Playwright.
-        
-        This method performs a graceful shutdown by:
-        1. Closing the browser context (if it exists)
-        2. Stopping the Playwright instance (if it exists)
-        """
         if self.context:
             await self.context.close()
         
