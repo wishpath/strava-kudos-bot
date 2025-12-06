@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Any, List, Final
 import asyncio
 
@@ -101,6 +102,9 @@ class StravaPage:
                 await self.check_all_kudos_buttons_and_click()
 
                 """cooldown gap"""
+                next_routine_time = datetime.now() + timedelta(seconds=twenty_minutes_in_seconds_between_kudos_routines)
+                logger.info(f"\nCooldown gap. Next routine will start at {next_routine_time.strftime('%H:%M')}")
+                logger.info("*" * 60 + "\n\n")
                 await asyncio.sleep(twenty_minutes_in_seconds_between_kudos_routines)
                 self.refresh_page()
 
@@ -189,23 +193,14 @@ class StravaPage:
 
 
 class BrowserManager:
-    """A singleton manager for Playwright browser instances and contexts.
-    
-    This class implements the Singleton pattern to ensure only one browser instance
-    is active throughout the application lifecycle. It manages the browser context
-    with persistent state storage for authentication and session management.
-    """
+
     _instance = None
 
     def __new__(cls):
-        """Create or return the singleton instance of BrowserManager.
-        
-        Returns:
-            The singleton BrowserManager instance.
-        """
+        """Create or return the singleton instance of BrowserManager,
+        ensures there is a single browser instance in the app"""
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-
         return cls._instance
     
     def __init__(self) -> None:

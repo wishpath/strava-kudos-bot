@@ -10,7 +10,7 @@ for handler in logging.root.handlers[:]:
 
 logging.basicConfig(
     level=logging.DEBUG,
-    format="%(name)s: %(message)s"
+    format="%(message)s"
 )
 
 async def main() -> None:
