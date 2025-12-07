@@ -1,4 +1,6 @@
 PROBLEM:
+  - colors in console
+  - can load more entries by url? https://www.strava.com/dashboard?num_entries=150
   - continue on click_all_visible_kudos_buttons:
       - extract more info about feed entry:
         - "logger.info(f\"Found entry of: {owner_name}\")"

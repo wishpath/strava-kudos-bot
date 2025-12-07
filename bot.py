@@ -20,9 +20,7 @@ async def main() -> None:
         page = await manager.new_page()
         await page.goto("https://www.strava.com/dashboard", wait_until="load")
         await page.accept_cookies()
-
         await page.do_login()
-
         await page.loop_kudos_routines_with_cooldown_gaps()
     finally:
         await manager.close_browser()

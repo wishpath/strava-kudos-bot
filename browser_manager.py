@@ -96,22 +96,27 @@ class StravaPage:
         try:
             while True:
                 """kudos routine of lazy loading entries and clicking"""
-                for i in range(1):
+                for i in range(5): #1 is minimum
                     logger.info(f"Scrolling down to load feed entries: iteration: {i}")
                     await self.scroll_to_bottom_of_page_to_load_entries()
                 await self.check_all_kudos_buttons_and_click()
 
                 """cooldown gap"""
-                next_routine_time = datetime.now() + timedelta(seconds=twenty_minutes_in_seconds_between_kudos_routines)
-                logger.info(f"\nCooldown gap. Next routine will start at {next_routine_time.strftime('%H:%M')}")
+                cooldown_minutes = 20
+                next_routine_time = datetime.now() + timedelta(minutes=cooldown_minutes)
+                logger.info(f"\nCooldown: {cooldown_minutes} minutes. "
+                            f"Next routine start at: {next_routine_time.strftime('%H:%M')}")
                 logger.info("*" * 60 + "\n\n")
-                await asyncio.sleep(twenty_minutes_in_seconds_between_kudos_routines)
+                await self.sleep_minutes(cooldown_minutes)
                 self.refresh_page()
 
         except asyncio.CancelledError:
             logger.info("kudos routine cancelled")
             raise
-    
+
+    async def sleep_minutes(self, minutes: int) -> None:
+        await asyncio.sleep(minutes * 60)
+
     async def scroll_to_bottom_of_page_to_load_entries(self) -> None:
         # Jump directly to the bottom of the page
         # This triggers lazy loading for new entries that appear when reaching the bottom
@@ -186,7 +191,18 @@ class StravaPage:
                     logger.info(f"Feed entry of: {owner_name}, kudos button: {clicking_status}")
                     continue
 
-                logger.info(f"Feed entry of: {owner_name}, kudos button: {clicking_status}")
+                distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
+                distance = await distance_locator.text_content() if await distance_locator.count() else ""
+                activity_locator = feed_entry.locator("svg[data-testid='activity-icon'] title").first
+                activity_type = await activity_locator.evaluate("el => el.textContent") if await activity_locator.count() else ""
+                time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
+                start_time = await time_locator.inner_text() if await time_locator.count() else ""
+
+                logger.info(f"Feed entry of: {owner_name}, "
+                            f"kudos button: {clicking_status}, "
+                            f"{activity_type}, "
+                            f"{start_time}, "
+                            f"{distance}")
                 await kudos_button.click()
             
             await asyncio.sleep(1)
