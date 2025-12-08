@@ -73,7 +73,7 @@ class StravaPage:
             await asyncio.sleep(1)
 
         login_buttons = await self.playwright_page.query_selector_all('//button[@data-testid="google_auth_btn"]')
-        logger.debug(f"Found {len(login_buttons)} buttons:")
+        logger.debug(f"Found {len(login_buttons)} login buttons:")
         
         for btn in login_buttons:
             logger.debug(f"Button: {btn.text_content}")
@@ -96,7 +96,7 @@ class StravaPage:
         try:
             while True:
                 """kudos routine of lazy loading entries and clicking"""
-                for i in range(5): #1 is minimum
+                for i in range(1): #1 is minimum
                     logger.info(f"Scrolling down to load feed entries: iteration: {i}")
                     await self.scroll_to_bottom_of_page_to_load_entries()
                 await self.check_all_kudos_buttons_and_click()
@@ -127,28 +127,6 @@ class StravaPage:
         await self.playwright_page.evaluate("window.scrollBy(0, -200)")
         # Wait longer to ensure all new entries are loaded and rendered
         await asyncio.sleep(12)
-        
-    async def is_element_in_viewport(self, element: Locator) -> bool:
-        """Checks if element is in browsers viewport.
-
-        Args:
-            element: The locator of element.
-        
-        Returns:
-            True if the element is in browsers viewport, False otherwise.
-        """
-        box = await element.bounding_box()
-        if not box:
-            return False
-
-        viewport = await self.playwright_page.evaluate(
-            "() => ({ width: window.innerWidth, height: window.innerHeight })"
-        )
-
-        top = box["y"]
-        bottom = box["y"] + box["height"]
-
-        return not (bottom < 0 or top > viewport["height"])
     
     async def check_all_kudos_buttons_and_click(self) -> None:
         athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()]
@@ -186,9 +164,15 @@ class StravaPage:
                 else:
                     clicking_status = "was already clicked before"
 
+                GREEN = "\033[32m"
+                CYAN = "\033[36m"
+                YELLOW = "\033[33m"
+                BLUE = "\033[34m"
+                GREY = "\033[37m"
+                RESET = "\033[0m"
                 if not is_to_be_clicked or should_skip:
                     await feed_entry.scroll_into_view_if_needed()
-                    logger.info(f"Feed entry of: {owner_name}, kudos button: {clicking_status}")
+                    print(f"{GREY}{owner_name}, kudos button: {clicking_status}{RESET}")
                     continue
 
                 distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
@@ -198,11 +182,11 @@ class StravaPage:
                 time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
                 start_time = await time_locator.inner_text() if await time_locator.count() else ""
 
-                logger.info(f"Feed entry of: {owner_name}, "
-                            f"kudos button: {clicking_status}, "
-                            f"{activity_type}, "
-                            f"{start_time}, "
-                            f"{distance}")
+                print(f"{GREEN}{owner_name}{RESET}, "
+                      f"kudos button: {CYAN}{clicking_status}{RESET}, "
+                      f"{YELLOW}{activity_type}{RESET}, "
+                      f"{start_time}, "
+                      f"{BLUE}{distance}{RESET}")
                 await kudos_button.click()
             
             await asyncio.sleep(1)
@@ -250,7 +234,8 @@ class BrowserManager:
             timezone_id="Europe/Vilnius",
             service_workers="allow",
             permissions=["geolocation"],
-            geolocation={"latitude": 54.6872, "longitude": 25.2797},
+            geolocation={"latitude": 54.91782439745546, "longitude": 23.833729337385112},
+
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--disable-dev-shm-usage",

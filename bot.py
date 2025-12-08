@@ -4,7 +4,7 @@ import logging
 from browser_manager import manager
 
 logger = logging.getLogger(__name__)
-# Remove existing handlers
+
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
