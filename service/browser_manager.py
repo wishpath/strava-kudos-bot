@@ -9,6 +9,9 @@ from pathlib import Path
 
 import logging
 
+from configuration.config import Config
+from constants.colors import Color
+
 logger = logging.getLogger(__name__)
 
 logging.basicConfig(
@@ -43,9 +46,6 @@ class StravaPage:
     
     async def is_on_login_page(self) -> bool:
         return "login" in self.playwright_page.url
-    
-    async def refresh_page(self) -> None:
-        await self.playwright_page.reload(wait_until="load")
 
     async def accept_cookies(self) -> None:
         """Automatically accept cookies if the cookie consent banner is present.
@@ -91,24 +91,21 @@ class StravaPage:
             logger.info("On dashboard page.")
 
     async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
-        twenty_minutes_in_seconds_between_kudos_routines: Final = 20 * 60
-
         try:
             while True:
                 """kudos routine of lazy loading entries and clicking"""
-                for i in range(1): #1 is minimum
-                    logger.info(f"Scrolling down to load feed entries: iteration: {i}")
+                for i in range(Config.count_of_scroll_to_bottom_of_page_to_load_entries):
+                    logger.info(f"Scrolling down to load feed entries: iteration: {i + 1}"
+                                f"/{Config.count_of_scroll_to_bottom_of_page_to_load_entries}")
                     await self.scroll_to_bottom_of_page_to_load_entries()
                 await self.check_all_kudos_buttons_and_click()
 
                 """cooldown gap"""
-                cooldown_minutes = 20
-                next_routine_time = datetime.now() + timedelta(minutes=cooldown_minutes)
-                logger.info(f"\nCooldown: {cooldown_minutes} minutes. "
-                            f"Next routine start at: {next_routine_time.strftime('%H:%M')}")
+                logger.info(f"\nCooldown: {Config.cooldown_minutes} minutes. Next routine starts at: "
+                            f"{(datetime.now() + timedelta(minutes=Config.cooldown_minutes)).strftime('%H:%M')}")
                 logger.info("*" * 60 + "\n\n")
-                await self.sleep_minutes(cooldown_minutes)
-                self.refresh_page()
+                await self.sleep_minutes(Config.cooldown_minutes)
+                self.playwright_page.reload(wait_until="load")
 
         except asyncio.CancelledError:
             logger.info("kudos routine cancelled")
@@ -164,15 +161,9 @@ class StravaPage:
                 else:
                     clicking_status = "was already clicked before"
 
-                GREEN = "\033[32m"
-                CYAN = "\033[36m"
-                YELLOW = "\033[33m"
-                BLUE = "\033[34m"
-                GREY = "\033[37m"
-                RESET = "\033[0m"
                 if not is_to_be_clicked or should_skip:
                     await feed_entry.scroll_into_view_if_needed()
-                    print(f"{GREY}{owner_name}, kudos button: {clicking_status}{RESET}")
+                    print(f"{Color.GREY}{owner_name}, kudos button: {clicking_status}{Color.RESET}")
                     continue
 
                 distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
@@ -182,11 +173,11 @@ class StravaPage:
                 time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
                 start_time = await time_locator.inner_text() if await time_locator.count() else ""
 
-                print(f"{GREEN}{owner_name}{RESET}, "
-                      f"kudos button: {CYAN}{clicking_status}{RESET}, "
-                      f"{YELLOW}{activity_type}{RESET}, "
+                print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
+                      f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "
+                      f"{Color.YELLOW}{activity_type}{Color.RESET}, "
                       f"{start_time}, "
-                      f"{BLUE}{distance}{RESET}")
+                      f"{Color.BLUE}{distance}{Color.RESET}")
                 await kudos_button.click()
             
             await asyncio.sleep(1)

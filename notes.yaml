@@ -1,10 +1,8 @@
 PROBLEM:
-  - constant classes
-  - colors in console
+  - in case of kudos is already clicked, scroll down gradually gradually to see it, dont just teleport
+  - extract training entry link and log it to console
+  - can manager and page be separate classes?
   - can load more entries by url? https://www.strava.com/dashboard?num_entries=150
-  - continue on click_all_visible_kudos_buttons:
-      - extract more info about feed entry:
-        - "logger.info(f\"Found entry of: {owner_name}\")"
   - scroll_to_bottom_of_page - can those waits be reduced/stopped by some trigger, like "page fully loaded state".
   - number of scroll downs, should be a "cap" only. else, stop scrolling down by detecting a kudos button pressed
   - collect who liked my entries

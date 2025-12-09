@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from browser_manager import manager
+from service.browser_manager import manager
 
 logger = logging.getLogger(__name__)
 
