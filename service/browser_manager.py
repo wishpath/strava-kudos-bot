@@ -172,8 +172,9 @@ class StravaPage:
                 activity_type = await activity_locator.evaluate("el => el.textContent") if await activity_locator.count() else ""
                 time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
                 start_time = await time_locator.inner_text() if await time_locator.count() else ""
-                url_locator = feed_entry.locator("a[data-testid='entry-header']").first
+                url_locator = feed_entry.locator("a[data-testid='activity_name']").first
                 activity_url = await url_locator.get_attribute("href") if await url_locator.count() else ""
+                activity_url = f"https://www.strava.com{activity_url}" if activity_url else ""
 
                 print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
                       f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "

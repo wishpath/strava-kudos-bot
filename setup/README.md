@@ -4,7 +4,7 @@ An automated bot that gives kudos to activities on your Strava dashboard feed. B
 
 ## Demo
 
-![Bot in Action](./media/strava_kudos_bot.gif)
+![Bot in Action](../media/strava_kudos_bot.gif)
 
 ## Features
 
@@ -41,7 +41,7 @@ chmod +x setup.sh
 
 2. **Install Python dependencies**:
    ```bash
-   pip3 install -r requirements.txt
+   pip3 install -r setup/requirements.txt
    ```
 
 3. **Install Playwright browsers**:
