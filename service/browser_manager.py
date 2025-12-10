@@ -105,7 +105,7 @@ class StravaPage:
                             f"{(datetime.now() + timedelta(minutes=Config.cooldown_minutes)).strftime('%H:%M')}")
                 logger.info("*" * 60 + "\n\n")
                 await self.sleep_minutes(Config.cooldown_minutes)
-                self.playwright_page.reload(wait_until="load")
+                await self.playwright_page.reload(wait_until="load")
 
         except asyncio.CancelledError:
             logger.info("kudos routine cancelled")
@@ -172,12 +172,16 @@ class StravaPage:
                 activity_type = await activity_locator.evaluate("el => el.textContent") if await activity_locator.count() else ""
                 time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
                 start_time = await time_locator.inner_text() if await time_locator.count() else ""
+                url_locator = feed_entry.locator("a[data-testid='entry-header']").first
+                activity_url = await url_locator.get_attribute("href") if await url_locator.count() else ""
 
                 print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
                       f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "
                       f"{Color.YELLOW}{activity_type}{Color.RESET}, "
                       f"{start_time}, "
-                      f"{Color.BLUE}{distance}{Color.RESET}")
+                      f"{Color.GREY}{distance}{Color.RESET},"
+                      f"{activity_url}"
+                      )
                 await kudos_button.click()
             
             await asyncio.sleep(1)

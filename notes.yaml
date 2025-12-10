@@ -1,4 +1,5 @@
 PROBLEM:
+  - move setup files to another directory
   - in case of kudos is already clicked, scroll down gradually gradually to see it, dont just teleport
   - extract training entry link and log it to console
   - can manager and page be separate classes?
