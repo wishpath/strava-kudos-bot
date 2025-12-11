@@ -1,4 +1,7 @@
 PROBLEM:
+  - extract activity title as well
+  - ExtractAndPrint can be a separate class
+  - simplify "is_to_be_clicked or should_skip" logic
   - in case of kudos is already clicked, scroll down gradually gradually to see it, dont just teleport
   - extract training entry link and log it to console
   - can manager and page be separate classes?

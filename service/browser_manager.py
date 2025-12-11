@@ -126,8 +126,6 @@ class StravaPage:
         await asyncio.sleep(12)
     
     async def check_all_kudos_buttons_and_click(self) -> None:
-        athletes_to_skip=[name.strip() for name in "wishpath".split(",") if name.strip()]
-
         """Getting all feed entries"""
         feed_entries = self.playwright_page.locator("div[data-testid='web-feed-entry']")
         feed_entries_count = await feed_entries.count()
@@ -153,7 +151,10 @@ class StravaPage:
 
                 kudos_button_to_click = kudos_button.locator("svg[data-testid='unfilled_kudos']")
                 is_to_be_clicked = await kudos_button_to_click.count() > 0
-                should_skip = athletes_to_skip and any(athlete.lower() in owner_name.lower() for athlete in athletes_to_skip)
+                should_skip = (
+                        Config.athletes_to_skip and
+                        any(athlete.lower() in owner_name.lower() for athlete in Config.athletes_to_skip)
+                )
                 if should_skip:
                     clicking_status = "skipping this athlete"
                 elif is_to_be_clicked:
@@ -180,7 +181,7 @@ class StravaPage:
                       f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "
                       f"{Color.YELLOW}{activity_type}{Color.RESET}, "
                       f"{start_time}, "
-                      f"{Color.GREY}{distance}{Color.RESET},"
+                      f"{Color.GREY}{distance}{Color.RESET}, "
                       f"{activity_url}"
                       )
                 await kudos_button.click()
