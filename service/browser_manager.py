@@ -176,13 +176,15 @@ class StravaPage:
                 url_locator = feed_entry.locator("a[data-testid='activity_name']").first
                 activity_url = await url_locator.get_attribute("href") if await url_locator.count() else ""
                 activity_url = f"https://www.strava.com{activity_url}" if activity_url else ""
+                title = await url_locator.text_content() if await url_locator.count() else ""
 
                 print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
                       f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "
                       f"{Color.YELLOW}{activity_type}{Color.RESET}, "
                       f"{start_time}, "
                       f"{Color.GREY}{distance}{Color.RESET}, "
-                      f"{activity_url}"
+                      f"{activity_url}, "
+                      f"{Color.CYAN}{title}{Color.RESET}"
                       )
                 await kudos_button.click()
             
