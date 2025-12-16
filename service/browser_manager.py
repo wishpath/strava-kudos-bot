@@ -134,61 +134,71 @@ class StravaPage:
         for i in range(feed_entries_count):
             feed_entry = feed_entries.nth(i)
 
-            """Getting kudos buttons in the feed entry"""
-            kudos_buttons = feed_entry.locator("//button[@data-testid='kudos_button']")
-            kudos_buttons_count = await kudos_buttons.count()
+            """Dealing single entry"""
+            single_entry_kudos_buttons = feed_entry.locator("//button[@data-testid='kudos_button']")
+            single_entry_kudos_buttons_count = await single_entry_kudos_buttons.count()
+            for j in range(single_entry_kudos_buttons_count):
+                kudos_button = single_entry_kudos_buttons.nth(j)
+                owner_name = await self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count)
 
-            for j in range(kudos_buttons_count):
-                kudos_button = kudos_buttons.nth(j)
-
-                if kudos_buttons_count == 1:
-                    owner_name = feed_entry.locator("//a[@data-testid='owners-name']")
-                    owner_name = await owner_name.inner_text()
-                elif kudos_buttons_count >= 2:
-                    entry_li = kudos_button.locator("xpath=ancestor::li[.//*[@data-testid='entry-header']]")
-                    owner_name = entry_li.locator("//a[@data-testid='owners-name']").first
-                    owner_name = await owner_name.inner_text()
-
-                kudos_button_to_click = kudos_button.locator("svg[data-testid='unfilled_kudos']")
-                is_to_be_clicked = await kudos_button_to_click.count() > 0
-                should_skip = (
-                        Config.athletes_to_skip and
-                        any(athlete.lower() in owner_name.lower() for athlete in Config.athletes_to_skip)
-                )
-                if should_skip:
-                    clicking_status = "skipping this athlete"
-                elif is_to_be_clicked:
-                    clicking_status = "clicking now"
-                else:
-                    clicking_status = "was already clicked before"
-
-                if not is_to_be_clicked or should_skip:
+                """Skipping blacklisted athlete"""
+                athlete_is_in_skipping_list = await self.is_athlete_in_the_skipping_list(owner_name)
+                if athlete_is_in_skipping_list:
                     await feed_entry.scroll_into_view_if_needed()
-                    print(f"{Color.GREY}{owner_name}, kudos button: {clicking_status}{Color.RESET}")
+                    print(f"{Color.GREY}Skipping blacklisted athlete: {owner_name}{Color.RESET}")
                     continue
 
-                distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
-                distance = await distance_locator.text_content() if await distance_locator.count() else ""
-                activity_locator = feed_entry.locator("svg[data-testid='activity-icon'] title").first
-                activity_type = await activity_locator.evaluate("el => el.textContent") if await activity_locator.count() else ""
-                time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
-                start_time = await time_locator.inner_text() if await time_locator.count() else ""
-                url_locator = feed_entry.locator("a[data-testid='activity_name']").first
-                activity_url = await url_locator.get_attribute("href") if await url_locator.count() else ""
-                activity_url = f"https://www.strava.com{activity_url}" if activity_url else ""
-                title = await url_locator.text_content() if await url_locator.count() else ""
+                """Skipping already clicked button"""
+                unclicked_kudos_buttons = kudos_button.locator("svg[data-testid='unfilled_kudos']")
+                unclicked_kudos_buttons_exist = await unclicked_kudos_buttons.count() > 0
+                if not unclicked_kudos_buttons_exist:
+                    await feed_entry.scroll_into_view_if_needed()
+                    print(f"{Color.GREY}{owner_name}: Kudos were already clicked before {Color.RESET}")
+                    continue
 
-                print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
-                      f"kudos button: {Color.CYAN}{clicking_status}{Color.RESET}, "
-                      f"{Color.YELLOW}{activity_type}{Color.RESET}, "
-                      f"{start_time}, "
-                      f"{Color.GREY}{distance}{Color.RESET}, "
-                      f"{activity_url}, "
-                      f"{Color.CYAN}{title}{Color.RESET}"
-                      )
+                """clicking"""
+                await self.print_clicking_details(feed_entry, owner_name)
                 await kudos_button.click()
             
             await asyncio.sleep(1)
+
+    async def print_clicking_details(self, feed_entry, owner_name):
+        distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
+        distance = await distance_locator.text_content() if await distance_locator.count() else ""
+        activity_locator = feed_entry.locator("svg[data-testid='activity-icon'] title").first
+        activity_type = await activity_locator.evaluate(
+            "el => el.textContent") if await activity_locator.count() else ""
+        time_locator = feed_entry.locator("time[data-testid='date_at_time']").first
+        start_time = await time_locator.inner_text() if await time_locator.count() else ""
+        url_locator = feed_entry.locator("a[data-testid='activity_name']").first
+        activity_url = await url_locator.get_attribute("href") if await url_locator.count() else ""
+        activity_url = f"https://www.strava.com{activity_url}" if activity_url else ""
+        title = await url_locator.text_content() if await url_locator.count() else ""
+        print(f"{Color.GREEN}{owner_name}{Color.RESET}, "
+              f"kudos button: {Color.CYAN}clicking now{Color.RESET}, "
+              f"{Color.YELLOW}{activity_type}{Color.RESET}, "
+              f"{start_time}, "
+              f"{Color.GREY}{distance}{Color.RESET}, "
+              f"{activity_url}, "
+              f"{Color.CYAN}{title}{Color.RESET}"
+              )
+
+    async def is_athlete_in_the_skipping_list(self, owner_name):
+        athlete_is_in_skipping_list = (
+                Config.athletes_to_skip and
+                any(athlete.lower() in owner_name.lower() for athlete in Config.athletes_to_skip)
+        )
+        return athlete_is_in_skipping_list
+
+    async def get_owners_name(self, feed_entry, kudos_button, kudos_buttons_count):
+        if kudos_buttons_count == 1:
+            owner_name = feed_entry.locator("//a[@data-testid='owners-name']")
+            owner_name = await owner_name.inner_text()
+        elif kudos_buttons_count >= 2:
+            entry_li = kudos_button.locator("xpath=ancestor::li[.//*[@data-testid='entry-header']]")
+            owner_name = entry_li.locator("//a[@data-testid='owners-name']").first
+            owner_name = await owner_name.inner_text()
+        return owner_name
 
 
 class BrowserManager:

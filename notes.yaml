@@ -1,4 +1,5 @@
 PROBLEM:
+  - self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count): in case of multiple kudos, is it correct to pass the whole feed_entry?
   - print in separate class
   - either clicking or not clicking, the entry title should be visible on top of the screen
   - ExtractAndPrint can be a separate class
