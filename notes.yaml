@@ -1,5 +1,4 @@
 PROBLEM:
-  - self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count): in case of multiple kudos, is it correct to pass the whole feed_entry?
   - print in separate class
   - either clicking or not clicking, the entry title should be visible on top of the screen
   - ExtractAndPrint can be a separate class
@@ -11,3 +10,4 @@ PROBLEM:
   - scroll_to_bottom_of_page - can those waits be reduced/stopped by some trigger, like "page fully loaded state".
   - number of scroll downs, should be a "cap" only. else, stop scrolling down by detecting a kudos button pressed
   - collect who liked my entries
+  - self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count): in case of multiple kudos, is it correct to pass the whole feed_entry?

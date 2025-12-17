@@ -1,16 +1,17 @@
 from datetime import datetime, timedelta
-from typing import Any, List, Final
+from typing import Any
 import asyncio
 
 from playwright.async_api import async_playwright
-from playwright.async_api import Page, Locator
+from playwright.async_api import Page
 
 from pathlib import Path
 
 import logging
 
-from configuration.config import Config
+from a_settings.props import Props
 from constants.colors import Color
+from service.feed_entry_print_service import FeedEntryPrintService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class StravaPage:
     def __init__(self, playwright_page: Page) -> None:
         """Strava page constructor: fields don't have to be predefined in the class"""
         self.playwright_page = playwright_page
+        self.feed_entry_printer = FeedEntryPrintService()
     
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying Playwright Page instance.
@@ -94,17 +96,17 @@ class StravaPage:
         try:
             while True:
                 """kudos routine of lazy loading entries and clicking"""
-                for i in range(Config.count_of_scroll_to_bottom_of_page_to_load_entries):
+                for i in range(Props.count_of_scroll_to_bottom_of_page_to_load_entries):
                     logger.info(f"Scrolling down to load feed entries: iteration: {i + 1}"
-                                f"/{Config.count_of_scroll_to_bottom_of_page_to_load_entries}")
+                                f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")
                     await self.scroll_to_bottom_of_page_to_load_entries()
                 await self.check_all_kudos_buttons_and_click()
 
                 """cooldown gap"""
-                logger.info(f"\nCooldown: {Config.cooldown_minutes} minutes. Next routine starts at: "
-                            f"{(datetime.now() + timedelta(minutes=Config.cooldown_minutes)).strftime('%H:%M')}")
+                logger.info(f"\nCooldown: {Props.cooldown_minutes} minutes. Next routine starts at: "
+                            f"{(datetime.now() + timedelta(minutes=Props.cooldown_minutes)).strftime('%H:%M')}")
                 logger.info("*" * 60 + "\n\n")
-                await self.sleep_minutes(Config.cooldown_minutes)
+                await self.sleep_minutes(Props.cooldown_minutes)
                 await self.playwright_page.reload(wait_until="load")
 
         except asyncio.CancelledError:
@@ -157,7 +159,9 @@ class StravaPage:
                     continue
 
                 """clicking"""
-                await self.print_clicking_details(feed_entry, owner_name)
+                # await self.print_clicking_details(feed_entry, owner_name)
+                # await FeedEntryPrintService.print_clicking(self, feed_entry, owner_name)
+                await self.feed_entry_printer.print_clicking(feed_entry, owner_name)
                 await kudos_button.click()
             
             await asyncio.sleep(1)
@@ -185,8 +189,8 @@ class StravaPage:
 
     async def is_athlete_in_the_skipping_list(self, owner_name):
         athlete_is_in_skipping_list = (
-                Config.athletes_to_skip and
-                any(athlete.lower() in owner_name.lower() for athlete in Config.athletes_to_skip)
+                Props.athletes_to_skip and
+                any(athlete.lower() in owner_name.lower() for athlete in Props.athletes_to_skip)
         )
         return athlete_is_in_skipping_list
 
@@ -213,7 +217,6 @@ class BrowserManager:
         return cls._instance
     
     def __init__(self) -> None:
-        """Initialize the BrowserManager with None values for playwright and context."""
         self.playwright = None
         self.context = None
 
