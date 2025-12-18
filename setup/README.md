@@ -4,7 +4,7 @@ An automated bot that gives kudos to activities on your Strava dashboard feed. B
 
 ## Demo
 
-![Bot in Action](../media/strava_kudos_bot.gif)
+![Bot in Action](../c_storage/strava_kudos_bot.gif)
 
 ## Features
 
@@ -97,36 +97,10 @@ Edit `.env` to customize:
 - **`INTERVAL_SECONDS`**: Time in seconds between cycles (default: 3600 = 1 hour)
 - **`ATHLETES_TO_SKIP`**: Comma-separated list of athlete names to skip (case-insensitive, partial matching)
 
-## Project Structure
-
-```
-strava-kudos-bot/
-├── bot.py
-├── browser_manager.py
-├── .env
-├── .env.example
-├── requirements.txt
-├── setup.sh
-├── .gitignore
-├── LICENSE
-├── README.md
-├── media/
-│ └── strava_kudos_bot.gif
-└── playwright-state/
-```
-
 ## Key Components
 
 ### `BrowserManager`
 Singleton class managing the Playwright browser instance with persistent context for maintaining login sessions.
-
-### `CustomPage`
-Wrapper around Playwright's Page with Strava-specific methods:
-- `accept_cookies()`: Handles cookie consent
-- `do_login()`: Automates login process
-- `give_kudos()`: Finds and clicks kudos buttons
-- `execute_kudos_giving()`: Main loop for continuous operation
-- `scroll_to_bottom_of_page()`: Loads more activities
 
 ## Important Notes
 

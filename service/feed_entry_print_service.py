@@ -1,4 +1,4 @@
-from constants.colors import Color
+from c_storage.colors import Color
 
 
 class FeedEntryPrintService:
