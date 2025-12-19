@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 class StravaPage:
     def __init__(self, playwright_page: Page) -> None:
-        """Strava page constructor: fields don't have to be predefined in the class"""
         self.playwright_page = playwright_page
         self.feed_entry_printer = FeedEntryPrintService()
 
@@ -29,18 +28,7 @@ class StravaPage:
         """
         return getattr(self.playwright_page, name)
 
-    async def is_on_dashboard_page__url_contains_dashboard(self) -> bool:
-        return "dashboard" in self.playwright_page.url
-
-    async def is_on_login_page(self) -> bool:
-        return "login" in self.playwright_page.url
-
     async def accept_cookies(self) -> None:
-        """Automatically accept cookies if the cookie consent banner is present.
-
-        This method waits few seconds for the cookie banner to appear, then clicks
-        the "Accept All" button if found. If no banner is present - log entry is created.
-        """
         try:
             cookie_banner_btns = await self.playwright_page.wait_for_selector("//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
             cookie_banner_accept_btn = await cookie_banner_btns.query_selector("//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
@@ -56,7 +44,7 @@ class StravaPage:
         """ Checks if on login page and performs login by clicking loging with Google
         and giving time for human to perform login manually.
         """
-        if not await self.is_on_login_page():
+        if not ("login" in self.playwright_page.url):
             await self.playwright_page.goto("https://www.strava.com/login", wait_until="load")
             await asyncio.sleep(1)
 
@@ -72,7 +60,7 @@ class StravaPage:
 
         await asyncio.sleep(2)
 
-        if not await self.is_on_dashboard_page__url_contains_dashboard():
+        if not ("dashboard" in self.playwright_page.url):
             logger.info("Do a manual login.")
             await asyncio.sleep(50)
         else:
@@ -86,7 +74,7 @@ class StravaPage:
                     logger.info(f"Scrolling down to load feed entries: iteration: {i + 1}"
                                 f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")
                     await self.scroll_to_bottom_of_page_to_load_entries()
-                await self.check_all_kudos_buttons_and_click()
+                await self.traverse_feed_entries()
 
                 """cooldown gap"""
                 logger.info(f"\nCooldown: {Props.cooldown_minutes} minutes. Next routine starts at: "
@@ -113,45 +101,39 @@ class StravaPage:
         # Wait longer to ensure all new entries are loaded and rendered
         await asyncio.sleep(12)
 
-    async def check_all_kudos_buttons_and_click(self) -> None:
+    async def traverse_feed_entries(self) -> None:
         """Getting all feed entries"""
         feed_entries = self.playwright_page.locator("div[data-testid='web-feed-entry']")
         feed_entries_count = await feed_entries.count()
         logger.debug(f"Visible feed entries count {feed_entries_count}")
-
+        """Dealing all feed entries"""
         for i in range(feed_entries_count):
-            feed_entry = feed_entries.nth(i)
-
-            """Dealing single entry"""
-            single_entry_kudos_buttons = feed_entry.locator("//button[@data-testid='kudos_button']")
-            single_entry_kudos_buttons_count = await single_entry_kudos_buttons.count()
-            for j in range(single_entry_kudos_buttons_count):
-                kudos_button = single_entry_kudos_buttons.nth(j)
-                owner_name = await self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count)
-
-                """Skipping blacklisted athlete"""
-                athlete_is_in_skipping_list = await self.is_athlete_in_the_skipping_list(owner_name)
-                if athlete_is_in_skipping_list:
-                    await feed_entry.scroll_into_view_if_needed()
-                    print(f"{Color.GREY}Skipping blacklisted athlete: {owner_name}{Color.RESET}")
-                    continue
-
-                """Skipping already clicked button"""
-                unclicked_kudos_buttons = kudos_button.locator("svg[data-testid='unfilled_kudos']")
-                unclicked_kudos_buttons_exist = await unclicked_kudos_buttons.count() > 0
-                if not unclicked_kudos_buttons_exist:
-                    await feed_entry.scroll_into_view_if_needed()
-                    print(f"{Color.GREY}{owner_name}: Kudos were already clicked before {Color.RESET}")
-                    continue
-
-                """clicking"""
-                # await self.print_clicking_details(feed_entry, owner_name)
-                # await FeedEntryPrintService.print_clicking(self, feed_entry, owner_name)
-                await self.feed_entry_printer.print_clicking(feed_entry, owner_name)
-                await kudos_button.click()
-
+            await self.deal_single_feed_entry(feed_entries.nth(i))
             await asyncio.sleep(1)
 
+    async def deal_single_feed_entry(self, feed_entry):
+        single_entry_kudos_buttons = feed_entry.locator("//button[@data-testid='kudos_button']")
+        single_entry_kudos_buttons_count = await single_entry_kudos_buttons.count()
+        for j in range(single_entry_kudos_buttons_count):
+            kudos_button = single_entry_kudos_buttons.nth(j)
+            owner_name = await self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count)
+
+            """Skipping blacklisted athlete"""
+            if await self.is_athlete_in_the_skipping_list(owner_name):
+                await feed_entry.scroll_into_view_if_needed()
+                print(f"{Color.GREY}Skipping blacklisted athlete: {owner_name}{Color.RESET}")
+                continue
+
+            """Skipping already clicked button"""
+            unclicked_kudos_buttons = kudos_button.locator("svg[data-testid='unfilled_kudos']")
+            if not (await unclicked_kudos_buttons.count() > 0):
+                await feed_entry.scroll_into_view_if_needed()
+                print(f"{Color.GREY}{owner_name}: Kudos were already clicked before {Color.RESET}")
+                continue
+
+            """clicking kudos"""
+            await self.feed_entry_printer.print_clicking(feed_entry, owner_name)
+            await kudos_button.click()
 
     async def is_athlete_in_the_skipping_list(self, owner_name):
         athlete_is_in_skipping_list = (

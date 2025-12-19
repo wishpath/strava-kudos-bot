@@ -1,8 +1,9 @@
 PROBLEM:
-  - can manager and page be separate classes?
   - either clicking or not clicking, the entry title should be visible on top of the screen, in case of kudos is already clicked, scroll down gradually gradually to see it, dont just teleport
-  - can load more entries by url? https://www.strava.com/dashboard?num_entries=150
   - scroll_to_bottom_of_page - can those waits be reduced/stopped by some trigger, like "page fully loaded state".
   - number of scroll downs, should be a "cap" only. else, stop scrolling down by detecting a kudos button pressed
   - collect who liked my entries
   - self.get_owners_name(feed_entry, kudos_button, single_entry_kudos_buttons_count): in case of multiple kudos, is it correct to pass the whole feed_entry?
+
+LETS NOT:
+  - research more on loading more entries by url? example https://www.strava.com/dashboard?num_entries=150 (not working)

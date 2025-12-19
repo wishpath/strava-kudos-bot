@@ -3,7 +3,9 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 from service.strava_page import StravaPage
 
+
 class BrowserManager:
+
     _singleton = None
 
     """create sigleton object instance"""
@@ -16,17 +18,11 @@ class BrowserManager:
         self.context = None
 
     async def start_browser(self) -> None:
-        """Start the Playwright browser with a persistent context.
-        
-        This method initializes Playwright (if not already started) and launches a
-        browser with persistent storage.
-        
-        The persistent context ensures that login sessions and cookies are maintained
-        across browser restarts.
-        """
+
         if not self.playwright:
             self.playwright = await async_playwright().start()
 
+        """Start the Playwright browser with a persistent context"""
         self.context = await self.playwright.chromium.launch_persistent_context(
             user_data_dir=str(Path(__file__).resolve().parents[1] / "c_storage" / "playwright-state"),
             headless=False,
