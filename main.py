@@ -1,17 +1,7 @@
 import asyncio
-import logging
 
 from service.browser_manager import manager
 
-logger = logging.getLogger(__name__)
-
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
-
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(message)s"
-)
 
 async def main() -> None:
     await manager.start_browser()

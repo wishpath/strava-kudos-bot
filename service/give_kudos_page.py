@@ -9,7 +9,8 @@ from service.feed_entry_print_service import FeedEntryPrintService
 
 logger = logging.getLogger(__name__)
 
-class StravaPage:
+
+class GiveKudosPage:
     def __init__(self, playwright_page: Page) -> None:
         self.playwright_page = playwright_page
         self.feed_entry_printer = FeedEntryPrintService()

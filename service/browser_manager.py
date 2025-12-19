@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from playwright.async_api import async_playwright
-from service.strava_page import StravaPage
+from service.strava_page import GiveKudosPage
 
 
 class BrowserManager:
@@ -45,9 +45,9 @@ class BrowserManager:
             user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
-    async def new_page(self) -> StravaPage:
+    async def new_page(self) -> GiveKudosPage:
         page = await self.context.new_page()
-        return StravaPage(page)
+        return GiveKudosPage(page)
 
     async def close_browser(self) -> None:
         if self.context:
