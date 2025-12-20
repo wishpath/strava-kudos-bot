@@ -1,11 +1,13 @@
-from datetime import datetime, timedelta
-from typing import Any
 import asyncio
-from playwright.async_api import Page
 import logging
+from typing import Any
+
+from playwright.async_api import Page
+
 from a_settings.props import Props
 from c_storage.colors import Color
-from service.feed_entry_print_service import FeedEntryPrintService
+from service.console_print import ConsolePrint
+from util.util import Util
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +15,7 @@ logger = logging.getLogger(__name__)
 class GiveKudosPage:
     def __init__(self, playwright_page: Page) -> None:
         self.playwright_page = playwright_page
-        self.feed_entry_printer = FeedEntryPrintService()
+        self.feed_entry_printer = ConsolePrint()
 
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying Playwright Page instance.
@@ -31,11 +33,13 @@ class GiveKudosPage:
 
     async def accept_cookies(self) -> None:
         try:
-            cookie_banner_btns = await self.playwright_page.wait_for_selector("//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
-            cookie_banner_accept_btn = await cookie_banner_btns.query_selector("//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
+            cookie_banner_buttons = await self.playwright_page.wait_for_selector(
+                "//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
+            cookie_banner_accept_button = await cookie_banner_buttons.query_selector(
+                "//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
 
-            if cookie_banner_accept_btn:
-                await cookie_banner_accept_btn.click()
+            if cookie_banner_accept_button:
+                await cookie_banner_accept_button.click()
             else:
                 raise Exception("Cookie banner found but accept button not found.")
         except Exception as e:
@@ -70,26 +74,22 @@ class GiveKudosPage:
     async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
         try:
             while True:
-                """kudos routine of lazy loading entries and clicking"""
+                """lazy loading entries"""
                 for i in range(Props.count_of_scroll_to_bottom_of_page_to_load_entries):
-                    logger.info(f"Scrolling down to load feed entries: iteration: {i + 1}"
-                                f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")
+                    await ConsolePrint.print_loading_entries(i)
                     await self.scroll_to_bottom_of_page_to_load_entries()
+
+                """deal feed entries"""
                 await self.traverse_feed_entries()
 
                 """cooldown gap"""
-                logger.info(f"\nCooldown: {Props.cooldown_minutes} minutes. Next routine starts at: "
-                            f"{(datetime.now() + timedelta(minutes=Props.cooldown_minutes)).strftime('%H:%M')}")
-                logger.info("*" * 60 + "\n\n")
-                await self.sleep_minutes(Props.cooldown_minutes)
+                await ConsolePrint.print_cooldown()
+                await Util.sleep_minutes(Props.cooldown_minutes)
                 await self.playwright_page.reload(wait_until="load")
 
         except asyncio.CancelledError:
             logger.info("kudos routine cancelled")
             raise
-
-    async def sleep_minutes(self, minutes: int) -> None:
-        await asyncio.sleep(minutes * 60)
 
     async def scroll_to_bottom_of_page_to_load_entries(self) -> None:
         # Jump directly to the bottom of the page

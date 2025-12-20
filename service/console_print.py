@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta
+
+from a_settings.props import Props
 from c_storage.colors import Color
 
 
-class FeedEntryPrintService:
+class ConsolePrint:
 
     async def print_clicking(self, feed_entry, owner_name: str) -> None:
         distance_locator = feed_entry.locator("li:has(span:has-text('Distance')) div.vNsSU").first
@@ -27,3 +30,14 @@ class FeedEntryPrintService:
               f"{Color.GREY}{distance}{Color.RESET}, "
               f"{activity_url}, "
               f"{Color.CYAN}{title}{Color.RESET}")
+
+    @staticmethod
+    async def print_cooldown():
+        print(f"\nCooldown: {Props.cooldown_minutes} minutes. Next routine starts at: "
+              f"{(datetime.now() + timedelta(minutes=Props.cooldown_minutes)).strftime('%H:%M')}")
+        print("*" * 60 + "\n\n")
+
+    @staticmethod
+    async def print_loading_entries(i):
+        print(f"Scrolling down to load feed entries: iteration: {i + 1}"
+                    f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")

@@ -1,18 +1,21 @@
 from pathlib import Path
 
 from playwright.async_api import async_playwright
-from service.strava_page import GiveKudosPage
+
+from service.give_kudos_page import GiveKudosPage
 
 
 class BrowserManager:
-
     _singleton = None
 
-    """create sigleton object instance"""
+    """create singleton object instance"""
+
     def __new__(this_class):
         this_class._singleton = super().__new__(this_class) if this_class._singleton is None else this_class._singleton
         return this_class._singleton
+
     """initial fields setter: 'self' refers to the the object returned by __new__"""
+
     def __init__(self) -> None:
         self.playwright = None
         self.context = None
@@ -42,7 +45,7 @@ class BrowserManager:
                 "--mute-audio",
                 "--start-maximized"
             ],
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            # user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
     async def new_page(self) -> GiveKudosPage:
