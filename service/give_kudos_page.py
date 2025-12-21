@@ -9,8 +9,6 @@ from c_storage.colors import Color
 from service.console_print import ConsolePrint
 from util.util import Util
 
-logger = logging.getLogger(__name__)
-
 
 class GiveKudosPage:
     def __init__(self, playwright_page: Page) -> None:
@@ -22,19 +20,38 @@ class GiveKudosPage:
         Delegates the call to the underlying Playwright Page instance."""
         return getattr(self.playwright_page, name)
 
+    # async def accept_cookies(self) -> None:
+    #     try:
+    #         cookie_banner_buttons = await self.playwright_page.wait_for_selector(
+    #             "//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
+    #         cookie_banner_accept_button = await cookie_banner_buttons.query_selector(
+    #             "//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
+    #
+    #         if cookie_banner_accept_button:
+    #             await cookie_banner_accept_button.click()
+    #         else:
+    #             raise Exception("Cookie banner found but accept button not found.")
+    #     except Exception as e:
+    #         logger.info(f"No cookie banner found. {e}")
+
     async def accept_cookies(self) -> None:
+        """find cookie banner"""
         try:
             cookie_banner_buttons = await self.playwright_page.wait_for_selector(
                 "//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
-            cookie_banner_accept_button = await cookie_banner_buttons.query_selector(
-                "//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
+        except Exception:
+            return
+        ConsolePrint.print_cookie_banner(cookie_banner_buttons)
 
-            if cookie_banner_accept_button:
-                await cookie_banner_accept_button.click()
-            else:
-                raise Exception("Cookie banner found but accept button not found.")
-        except Exception as e:
-            logger.info(f"No cookie banner found. {e}")
+        """find accept button"""
+        cookie_accept_button = await cookie_banner_buttons.query_selector(
+            "//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
+        await ConsolePrint.print_accepting_cookies(cookie_accept_button)
+        if not cookie_accept_button:
+            raise Exception("NO COOKIE ACCEPT BUTTON FOUND")
+
+        """accept cookies"""
+        await cookie_accept_button.click()
 
     async def do_login(self) -> None:
         """ Checks if on login page and performs login by clicking loging with Google
@@ -45,22 +62,22 @@ class GiveKudosPage:
             await asyncio.sleep(1)
 
         login_buttons = await self.playwright_page.query_selector_all('//button[@data-testid="google_auth_btn"]')
-        logger.debug(f"Found {len(login_buttons)} login buttons:")
+        print(f"Found {len(login_buttons)} login buttons:")
 
         for btn in login_buttons:
-            logger.debug(f"Button: {btn.text_content}")
+            print(f"Button: {btn.text_content}")
             if await btn.is_visible():
                 await btn.click(timeout=10000)
-                logger.info(f"Clicked {btn}")
+                print(f"Clicked {btn}")
                 break
 
         await asyncio.sleep(2)
 
         if not ("dashboard" in self.playwright_page.url):
-            logger.info("Do a manual login.")
+            print("Do a manual login.")
             await asyncio.sleep(50)
         else:
-            logger.info("On dashboard page.")
+            print("On dashboard page.")
 
     async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
         try:
@@ -79,7 +96,7 @@ class GiveKudosPage:
                 await self.playwright_page.reload(wait_until="load")
 
         except asyncio.CancelledError:
-            logger.info("kudos routine cancelled")
+            print("kudos routine cancelled")
             raise
 
     async def scroll_to_bottom_of_page_to_load_entries(self) -> None:
@@ -97,7 +114,7 @@ class GiveKudosPage:
         """Getting all feed entries"""
         feed_entries = self.playwright_page.locator("div[data-testid='web-feed-entry']")
         feed_entries_count = await feed_entries.count()
-        logger.debug(f"Visible feed entries count {feed_entries_count}")
+        print(f"Feed entries loaded {feed_entries_count}")
         """Dealing all feed entries"""
         for i in range(feed_entries_count):
             await self.deal_single_feed_entry(feed_entries.nth(i))
