@@ -38,11 +38,6 @@ class ConsolePrint:
         print("*" * 60 + "\n\n")
 
     @staticmethod
-    def print_loading_entries(i):
-        print(f"Scrolling down to load feed entries: iteration: {i + 1}"
-                    f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")
-
-    @staticmethod
     def print_cookie_banner(cookie_banner_buttons):
         if cookie_banner_buttons:
             print(f"{Color.YELLOW}Cookie banner found{Color.RESET}")

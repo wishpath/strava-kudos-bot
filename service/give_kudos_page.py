@@ -20,20 +20,6 @@ class GiveKudosPage:
         Delegates the call to the underlying Playwright Page instance."""
         return getattr(self.playwright_page, name)
 
-    # async def accept_cookies(self) -> None:
-    #     try:
-    #         cookie_banner_buttons = await self.playwright_page.wait_for_selector(
-    #             "//div[@id='CybotCookiebotDialogBodyButtonsWrapper']", strict=True, timeout=3000)
-    #         cookie_banner_accept_button = await cookie_banner_buttons.query_selector(
-    #             "//button[@id='CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll']")
-    #
-    #         if cookie_banner_accept_button:
-    #             await cookie_banner_accept_button.click()
-    #         else:
-    #             raise Exception("Cookie banner found but accept button not found.")
-    #     except Exception as e:
-    #         logger.info(f"No cookie banner found. {e}")
-
     async def accept_cookies(self) -> None:
         """find cookie banner"""
         try:
@@ -78,13 +64,9 @@ class GiveKudosPage:
         try:
             while True:
                 """lazy loading entries"""
-                for i in range(Props.count_of_scroll_to_bottom_of_page_to_load_entries):
-                    ConsolePrint.print_loading_entries(i)
-                    await self.scroll_to_bottom_of_page_to_load_entries()
-
+                await self.scroll_down_and_load_entries()
                 """deal feed entries"""
                 await self.traverse_feed_entries()
-
                 """cooldown gap"""
                 await ConsolePrint.print_cooldown()
                 await Util.sleep_minutes(Props.cooldown_minutes)
@@ -93,6 +75,21 @@ class GiveKudosPage:
         except asyncio.CancelledError:
             print("kudos routine cancelled")
             raise
+
+    async def scroll_down_and_load_entries(self) -> None:
+        iteration = 0
+        while True:
+            if iteration >= Props.cap_count_of_scroll_to_bottom_of_page_to_load_entries:
+                break
+            clicked_kudos_exist = await self.locator(
+                "//button[@data-testid='kudos_button'][not(.//svg[@data-testid='unfilled_kudos'])]"
+            ).count() > 0
+            if clicked_kudos_exist:
+                print(f"{Color.RED}NOT scrolling down: clicked kudos found{Color.RESET}")
+                break
+            print(f"{Color.BLUE}scrolling down and loading entries: iteration {iteration + 1}{Color.RESET}")
+            await self.scroll_to_bottom_of_page_to_load_entries()
+            iteration += 1
 
     async def scroll_to_bottom_of_page_to_load_entries(self) -> None:
         # Jump directly to the bottom of the page
