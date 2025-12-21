@@ -18,17 +18,8 @@ class GiveKudosPage:
         self.feed_entry_printer = ConsolePrint()
 
     def __getattr__(self, name: str) -> Any:
-        """Delegate attribute access to the underlying Playwright Page instance.
-
-        This allows the CustomPage to act as a proxy for the original Page object,
-        providing transparent access to all Page methods and properties.
-
-        Args:
-            name: The name of the attribute to access.
-
-        Returns:
-            The attribute value from the underlying Page instance.
-        """
+        """Called when accessing an attribute/method not defined on GiveKudosPage itself.
+        Delegates the call to the underlying Playwright Page instance."""
         return getattr(self.playwright_page, name)
 
     async def accept_cookies(self) -> None:
