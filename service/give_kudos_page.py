@@ -54,37 +54,32 @@ class GiveKudosPage:
         await cookie_accept_button.click()
 
     async def do_login(self) -> None:
-        """ Checks if on login page and performs login by clicking loging with Google
-        and giving time for human to perform login manually.
-        """
+        """ensure we're on login page"""
         if not ("login" in self.playwright_page.url):
             await self.playwright_page.goto("https://www.strava.com/login", wait_until="load")
             await asyncio.sleep(1)
 
+        """auto log-in"""
         login_buttons = await self.playwright_page.query_selector_all('//button[@data-testid="google_auth_btn"]')
-        print(f"Found {len(login_buttons)} login buttons:")
-
         for btn in login_buttons:
-            print(f"Button: {btn.text_content}")
             if await btn.is_visible():
+                print(Color.GREEN + "Clicking log-in button" + Color.RESET)
                 await btn.click(timeout=10000)
-                print(f"Clicked {btn}")
                 break
-
         await asyncio.sleep(2)
 
-        if not ("dashboard" in self.playwright_page.url):
-            print("Do a manual login.")
-            await asyncio.sleep(50)
-        else:
-            print("On dashboard page.")
+        """manual log-in"""
+        while "dashboard" not in self.playwright_page.url:
+            print(Color.YELLOW + "Waiting for manual login" + Color.RESET)
+            await asyncio.sleep(Props.user_manual_login_wait_cycle_seconds)
+        print(Color.GREEN + "On dashboard page." + Color.RESET)
 
     async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
         try:
             while True:
                 """lazy loading entries"""
                 for i in range(Props.count_of_scroll_to_bottom_of_page_to_load_entries):
-                    await ConsolePrint.print_loading_entries(i)
+                    ConsolePrint.print_loading_entries(i)
                     await self.scroll_to_bottom_of_page_to_load_entries()
 
                 """deal feed entries"""

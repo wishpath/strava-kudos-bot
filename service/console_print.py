@@ -38,19 +38,19 @@ class ConsolePrint:
         print("*" * 60 + "\n\n")
 
     @staticmethod
-    async def print_loading_entries(i):
+    def print_loading_entries(i):
         print(f"Scrolling down to load feed entries: iteration: {i + 1}"
                     f"/{Props.count_of_scroll_to_bottom_of_page_to_load_entries}")
 
     @staticmethod
-    async def print_cookie_banner(cookie_banner_buttons):
+    def print_cookie_banner(cookie_banner_buttons):
         if cookie_banner_buttons:
             print(f"{Color.YELLOW}Cookie banner found{Color.RESET}")
         else:
             print(f"{Color.GREY}No cookie banner found{Color.RESET}")
 
     @staticmethod
-    async def print_accepting_cookies(cookie_accept_button):
+    def print_accepting_cookies(cookie_accept_button):
         if cookie_accept_button:
             print(f"{Color.CYAN}Clicking accept cookies button{Color.RESET}")
         else:
