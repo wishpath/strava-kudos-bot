@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from typing import Any
 
 from playwright.async_api import Page
@@ -61,20 +60,15 @@ class GiveKudosPage:
         print(Color.GREEN + "On dashboard page." + Color.RESET)
 
     async def loop_kudos_routines_with_cooldown_gaps(self) -> None:
-        try:
-            while True:
-                """lazy loading entries"""
-                await self.scroll_down_and_load_entries()
-                """deal feed entries"""
-                await self.traverse_feed_entries()
-                """cooldown gap"""
-                await ConsolePrint.print_cooldown()
-                await Util.sleep_minutes(Props.cooldown_minutes)
-                await self.playwright_page.reload(wait_until="load")
-
-        except asyncio.CancelledError:
-            print("kudos routine cancelled")
-            raise
+        while True:
+            """lazy loading entries"""
+            await self.scroll_down_and_load_entries()
+            """deal feed entries"""
+            await self.traverse_feed_entries()
+            """cooldown gap"""
+            await ConsolePrint.print_cooldown()
+            await Util.sleep_minutes(Props.cooldown_minutes)
+            await self.playwright_page.reload(wait_until="load")
 
     async def scroll_down_and_load_entries(self) -> None:
         iteration = 0
@@ -136,14 +130,17 @@ class GiveKudosPage:
             await self.feed_entry_printer.print_clicking(feed_entry, owner_name)
             await kudos_button.click()
 
-    async def is_athlete_in_the_skipping_list(self, owner_name):
+    @staticmethod
+    async def is_athlete_in_the_skipping_list(owner_name):
         athlete_is_in_skipping_list = (
                 Props.athletes_to_skip and
                 any(athlete.lower() in owner_name.lower() for athlete in Props.athletes_to_skip)
         )
         return athlete_is_in_skipping_list
 
-    async def get_owners_name(self, feed_entry, kudos_button, kudos_buttons_count):
+    @staticmethod
+    async def get_owners_name(feed_entry, kudos_button, kudos_buttons_count):
+        owner_name = None
         if kudos_buttons_count == 1:
             owner_name = feed_entry.locator("//a[@data-testid='owners-name']")
             owner_name = await owner_name.inner_text()
